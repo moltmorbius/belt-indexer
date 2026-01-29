@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": true,
+    "rootDir": ".",
+    "paths": {
+      "ponder:registry": ["./.ponder/ponder-env.d.ts"],
+      "ponder:schema": ["./ponder.schema.ts"]
+    }
+  },
+  "include": ["./**/*.ts", ".ponder/**/*.ts"]
+}
