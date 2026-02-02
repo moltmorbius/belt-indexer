@@ -8,9 +8,7 @@
 
 const EXPLORER = "https://scan.pulsechain.com";
 
-const DISCORD_WEBHOOK_URL =
-  process.env.DISCORD_WEBHOOK_URL ??
-  "https://discord.com/api/webhooks/1466236502555230362/KqiDbSkWVuyVjY0sP2wkZJd60Olr5YjQccBiicn86Yzb_HJzv0NG5LWFC6W-_A5pBCkw";
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL ?? "";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -186,10 +184,36 @@ function buildDeployEmbed(dep: DeployInfo) {
 }
 
 // ---------------------------------------------------------------------------
-// Send to Discord
+// Send to Discord (with rate limiting)
 // ---------------------------------------------------------------------------
 
-async function sendWebhook(embeds: any[]): Promise<boolean> {
+/** Simple queue to avoid Discord 429s. Max 1 request per 2 seconds. */
+let lastSendTime = 0;
+const MIN_INTERVAL_MS = 2000;
+const sendQueue: Array<{ embeds: any[]; resolve: (v: boolean) => void }> = [];
+let processing = false;
+
+async function processSendQueue(): Promise<void> {
+  if (processing) return;
+  processing = true;
+
+  while (sendQueue.length > 0) {
+    const item = sendQueue.shift()!;
+    const now = Date.now();
+    const wait = Math.max(0, MIN_INTERVAL_MS - (now - lastSendTime));
+    if (wait > 0) {
+      await new Promise((r) => setTimeout(r, wait));
+    }
+
+    const result = await doSendWebhook(item.embeds);
+    lastSendTime = Date.now();
+    item.resolve(result);
+  }
+
+  processing = false;
+}
+
+async function doSendWebhook(embeds: any[]): Promise<boolean> {
   if (!DISCORD_WEBHOOK_URL || embeds.length === 0) return false;
 
   try {
@@ -202,6 +226,23 @@ async function sendWebhook(embeds: any[]): Promise<boolean> {
       }),
     });
 
+    if (res.status === 429) {
+      // Rate limited — wait and retry once
+      const retryAfter = Number(res.headers.get("retry-after") || "5") * 1000;
+      console.warn(`Discord rate limited, retrying in ${retryAfter}ms`);
+      await new Promise((r) => setTimeout(r, retryAfter));
+      const retry = await fetch(DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "Belt Indexer", embeds }),
+      });
+      if (!retry.ok) {
+        console.error(`Discord webhook retry failed: ${retry.status}`);
+        return false;
+      }
+      return true;
+    }
+
     if (!res.ok) {
       console.error(`Discord webhook failed: ${res.status} ${res.statusText}`);
       return false;
@@ -211,6 +252,13 @@ async function sendWebhook(embeds: any[]): Promise<boolean> {
     console.error("Discord webhook error:", err);
     return false;
   }
+}
+
+async function sendWebhook(embeds: any[]): Promise<boolean> {
+  return new Promise((resolve) => {
+    sendQueue.push({ embeds, resolve });
+    processSendQueue();
+  });
 }
 
 // ---------------------------------------------------------------------------
