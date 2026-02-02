@@ -98,6 +98,7 @@ function registerUserOpHandler(
         entryPointVersion: version,
         entryPoint: event.log.address,
         txHash: event.transaction.hash,
+        blockHash: event.block.hash,
         blockNumber: BigInt(event.block.number),
         timestamp: BigInt(event.block.timestamp),
       })
@@ -116,6 +117,7 @@ function registerUserOpHandler(
         gasCost: actualGasCost,
         entryPointVersion: version,
         txHash: event.transaction.hash,
+        blockHash: event.block.hash,
         blockNumber: BigInt(event.block.number),
         timestamp: BigInt(event.block.timestamp),
       })
@@ -161,6 +163,7 @@ function registerUserOpHandler(
         actualGasUsed,
         entryPointVersion: version,
         txHash: event.transaction.hash,
+        blockHash: event.block.hash,
         blockNumber: BigInt(event.block.number),
         timestamp: BigInt(event.block.timestamp),
       };
@@ -203,6 +206,7 @@ function registerAccountDeployedHandler(
         entryPointVersion: version,
         entryPoint: event.log.address,
         txHash: event.transaction.hash,
+        blockHash: event.block.hash,
         blockNumber: BigInt(event.block.number),
         timestamp: BigInt(event.block.timestamp),
       })
@@ -234,6 +238,7 @@ function registerAccountDeployedHandler(
         paymaster: paymasterAddr,
         entryPointVersion: version,
         txHash: event.transaction.hash,
+        blockHash: event.block.hash,
         blockNumber: BigInt(event.block.number),
         timestamp: BigInt(event.block.timestamp),
       };

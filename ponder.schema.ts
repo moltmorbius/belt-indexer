@@ -43,6 +43,8 @@ export const userOperation = onchainTable(
     entryPoint: t.hex().notNull(),
     /** Transaction hash */
     txHash: t.hex().notNull(),
+    /** Block hash */
+    blockHash: t.hex().notNull(),
     /** Block number */
     blockNumber: t.bigint().notNull(),
     /** Block timestamp (unix seconds) */
@@ -79,6 +81,8 @@ export const accountDeployed = onchainTable(
     entryPoint: t.hex().notNull(),
     /** Transaction hash */
     txHash: t.hex().notNull(),
+    /** Block hash */
+    blockHash: t.hex().notNull(),
     /** Block number */
     blockNumber: t.bigint().notNull(),
     /** Block timestamp (unix seconds) */
@@ -145,6 +149,8 @@ export const accountActivity = onchainTable(
     entryPointVersion: entryPointVersion("entry_point_version").notNull(),
     /** Transaction hash */
     txHash: t.hex().notNull(),
+    /** Block hash */
+    blockHash: t.hex().notNull(),
     /** Block number */
     blockNumber: t.bigint().notNull(),
     /** Block timestamp */
