@@ -73,6 +73,7 @@ export interface UserOpInfo {
   actualGasUsed: bigint;
   entryPointVersion: string;
   txHash: string;
+  blockHash: string;
   blockNumber: bigint;
   timestamp: bigint;
 }
@@ -85,6 +86,7 @@ export interface DeployInfo {
   paymaster: string;
   entryPointVersion: string;
   txHash: string;
+  blockHash: string;
   blockNumber: bigint;
   timestamp: bigint;
 }
