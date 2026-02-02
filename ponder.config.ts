@@ -27,9 +27,9 @@ import { EntryPointAbi } from "./abis/EntryPointAbi";
  *   v0.9: 0xCc5C9b932F18D8Dd08Ee2FFFEF52b09583E247c0
  */
 
-// Start block — set conservatively to before Belt's first deployment on PulseChain.
-// Adjust this to a later block once you know the exact deployment block.
-const START_BLOCK = 17_000_000;
+// Start block — set to ~1 week before 2026-02-02 on PulseChain (~10s block time).
+// Current head: ~25,687,526. One week ≈ 60,480 blocks.
+const START_BLOCK = 25_627_000;
 
 export default createConfig({
   chains: {
