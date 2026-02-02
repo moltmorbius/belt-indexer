@@ -4,6 +4,7 @@ import {
   accountDeployed,
   smartAccount,
   accountActivity,
+  notificationLog,
 } from "ponder:schema";
 import type { EntryPointVersion } from "./constants";
 import {
@@ -14,6 +15,8 @@ import {
   isBeltFactory,
   ZERO_ADDRESS,
 } from "./constants";
+import { notifyUserOp, notifyAccountDeployed } from "./discord";
+import type { WalletState, UserOpInfo, DeployInfo } from "./discord";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -56,6 +59,36 @@ async function isBeltRelated(
   }
 
   return false;
+}
+
+/**
+ * Check if an event has already been notified (offchain table survives reindexes).
+ * If not notified, record it and return false. If already notified, return true.
+ */
+async function alreadyNotified(
+  eventId: string,
+  eventType: string,
+  db: any,
+): Promise<boolean> {
+  try {
+    const existing = await db.find(notificationLog, { id: eventId });
+    if (existing) return true;
+
+    // Record it
+    await db
+      .insert(notificationLog)
+      .values({
+        id: eventId,
+        eventType,
+        notifiedAt: BigInt(Date.now()),
+      })
+      .onConflictDoNothing();
+
+    return false;
+  } catch {
+    // If offchain table isn't ready yet, don't block indexing
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -115,18 +148,48 @@ function registerUserOpHandler(
       .onConflictDoNothing();
 
     // Update smart account stats if it's a known account
+    let walletState: WalletState | null = null;
     try {
       const existing = await context.db.find(smartAccount, { address: sender });
       if (existing) {
+        const newTotalOps = existing.totalUserOps + 1;
+        const newTotalGas = existing.totalGasSpent + actualGasCost;
         await context.db
           .update(smartAccount, { address: sender })
           .set({
-            totalUserOps: existing.totalUserOps + 1,
-            totalGasSpent: existing.totalGasSpent + actualGasCost,
+            totalUserOps: newTotalOps,
+            totalGasSpent: newTotalGas,
           });
+        walletState = {
+          address: sender,
+          factory: existing.factory,
+          entryPointVersion: existing.entryPointVersion,
+          deployedAt: existing.deployedAt,
+          totalUserOps: newTotalOps,
+          totalGasSpent: newTotalGas,
+        };
       }
     } catch {
       // Account not tracked yet — will be tracked once AccountDeployed is seen
+    }
+
+    // --- Discord notification (offchain dedup) ---
+    const wasNotified = await alreadyNotified(id, "user_op", context.db);
+    if (!wasNotified) {
+      const opInfo: UserOpInfo = {
+        userOpHash: id,
+        sender,
+        paymaster: paymasterAddr,
+        success,
+        actualGasCost,
+        actualGasUsed,
+        entryPointVersion: version,
+        txHash: event.transaction.hash,
+        blockNumber: BigInt(event.block.number),
+        timestamp: BigInt(event.block.timestamp),
+      };
+      // Fire-and-forget — don't block indexing on webhook delivery
+      notifyUserOp(opInfo, walletState).catch(() => {});
     }
   });
 }
@@ -179,6 +242,23 @@ function registerAccountDeployedHandler(
         totalGasSpent: 0n,
       })
       .onConflictDoNothing();
+
+    // --- Discord notification (offchain dedup) ---
+    const wasNotified = await alreadyNotified(id, "account_deployed", context.db);
+    if (!wasNotified) {
+      const depInfo: DeployInfo = {
+        userOpHash: id,
+        account: sender,
+        factory: factoryAddr,
+        paymaster: paymasterAddr,
+        entryPointVersion: version,
+        txHash: event.transaction.hash,
+        blockNumber: BigInt(event.block.number),
+        timestamp: BigInt(event.block.timestamp),
+      };
+      // Fire-and-forget
+      notifyAccountDeployed(depInfo).catch(() => {});
+    }
   });
 }
 
