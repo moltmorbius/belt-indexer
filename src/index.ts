@@ -4,7 +4,6 @@ import {
   accountDeployed,
   smartAccount,
   accountActivity,
-  notificationLog,
 } from "ponder:schema";
 import type { EntryPointVersion } from "./constants";
 import {
@@ -17,6 +16,7 @@ import {
 } from "./constants";
 import { notifyUserOp, notifyAccountDeployed } from "./discord";
 import type { WalletState, UserOpInfo, DeployInfo } from "./discord";
+import { shouldNotify } from "./redis";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,36 +59,6 @@ async function isBeltRelated(
   }
 
   return false;
-}
-
-/**
- * Check if an event has already been notified (offchain table survives reindexes).
- * If not notified, record it and return false. If already notified, return true.
- */
-async function alreadyNotified(
-  eventId: string,
-  eventType: string,
-  db: any,
-): Promise<boolean> {
-  try {
-    const existing = await db.find(notificationLog, { id: eventId });
-    if (existing) return true;
-
-    // Record it
-    await db
-      .insert(notificationLog)
-      .values({
-        id: eventId,
-        eventType,
-        notifiedAt: BigInt(Date.now()),
-      })
-      .onConflictDoNothing();
-
-    return false;
-  } catch {
-    // If offchain table isn't ready yet, don't block indexing
-    return false;
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -173,9 +143,9 @@ function registerUserOpHandler(
       // Account not tracked yet — will be tracked once AccountDeployed is seen
     }
 
-    // --- Discord notification (offchain dedup) ---
-    const wasNotified = await alreadyNotified(id, "user_op", context.db);
-    if (!wasNotified) {
+    // --- Discord notification (Redis dedup) ---
+    const isNew = await shouldNotify(id, BigInt(event.block.number));
+    if (isNew) {
       const opInfo: UserOpInfo = {
         userOpHash: id,
         sender,
@@ -243,9 +213,9 @@ function registerAccountDeployedHandler(
       })
       .onConflictDoNothing();
 
-    // --- Discord notification (offchain dedup) ---
-    const wasNotified = await alreadyNotified(id, "account_deployed", context.db);
-    if (!wasNotified) {
+    // --- Discord notification (Redis dedup) ---
+    const isNew = await shouldNotify(id, BigInt(event.block.number));
+    if (isNew) {
       const depInfo: DeployInfo = {
         userOpHash: id,
         account: sender,
