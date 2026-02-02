@@ -148,8 +148,8 @@ function registerUserOpHandler(
       // Account not tracked yet — will be tracked once AccountDeployed is seen
     }
 
-    // --- Discord notification (Redis dedup) ---
-    const isNew = await shouldNotify(id, BigInt(event.block.number));
+    // --- Discord notification (Redis dedup, per chain+contract) ---
+    const isNew = await shouldNotify(id, BigInt(event.block.number), chainId, contractName);
     if (isNew) {
       const opInfo: UserOpInfo = {
         userOpHash: id,
@@ -223,8 +223,8 @@ function registerAccountDeployedHandler(
       })
       .onConflictDoNothing();
 
-    // --- Discord notification (Redis dedup) ---
-    const isNew = await shouldNotify(id, BigInt(event.block.number));
+    // --- Discord notification (Redis dedup, per chain+contract) ---
+    const isNew = await shouldNotify(id, BigInt(event.block.number), chainId, contractName);
     if (isNew) {
       const depInfo: DeployInfo = {
         userOpHash: id,

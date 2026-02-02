@@ -14,7 +14,7 @@ import Redis from "ioredis";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 
 // Keys
-const WATERMARK_KEY = "belt:notifications:watermark"; // latest notified block
+const WATERMARK_PREFIX = "belt:notifications:watermark"; // per chain:contract
 const EVENT_PREFIX = "belt:notifications:event:"; // per-event dedup
 const EVENT_TTL = 60 * 60 * 24 * 30; // 30 days TTL for event keys
 
@@ -53,15 +53,25 @@ function getRedis(): Redis | null {
 }
 
 /**
+ * Build a watermark key scoped to chain + contract.
+ * e.g. "belt:notifications:watermark:369:EntryPointV07"
+ */
+function watermarkKey(chainId: number, contract: string): string {
+  return `${WATERMARK_PREFIX}:${chainId}:${contract}`;
+}
+
+/**
  * Check if an event should be notified.
  * Returns true if the event is NEW (should notify).
  * Returns false if already notified (skip).
  *
- * Also records the event as notified and updates the watermark.
+ * Watermarks are per chain+contract so multi-chain syncs don't block each other.
  */
 export async function shouldNotify(
   eventId: string,
   blockNumber: bigint,
+  chainId: number = 369,
+  contract: string = "default",
 ): Promise<boolean> {
   const r = getRedis();
   if (!r) {
@@ -71,8 +81,10 @@ export async function shouldNotify(
   }
 
   try {
+    const wmKey = watermarkKey(chainId, contract);
+
     // Check watermark — if this block is below watermark, skip
-    const watermark = await r.get(WATERMARK_KEY);
+    const watermark = await r.get(wmKey);
     if (watermark) {
       const wm = BigInt(watermark);
       if (blockNumber < wm) return false;
@@ -89,7 +101,7 @@ export async function shouldNotify(
 
     // Update watermark if this block is newer
     if (!watermark || blockNumber > BigInt(watermark)) {
-      await r.set(WATERMARK_KEY, blockNumber.toString());
+      await r.set(wmKey, blockNumber.toString());
     }
 
     return true;
@@ -100,14 +112,17 @@ export async function shouldNotify(
 }
 
 /**
- * Get the current watermark (for debugging/health checks).
+ * Get the current watermark for a chain+contract (for debugging/health checks).
  */
-export async function getWatermark(): Promise<bigint | null> {
+export async function getWatermark(
+  chainId: number = 369,
+  contract: string = "default",
+): Promise<bigint | null> {
   const r = getRedis();
   if (!r) return null;
 
   try {
-    const wm = await r.get(WATERMARK_KEY);
+    const wm = await r.get(watermarkKey(chainId, contract));
     return wm ? BigInt(wm) : null;
   } catch {
     return null;
