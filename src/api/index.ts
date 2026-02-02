@@ -5,6 +5,11 @@ import { Hono } from "hono";
 
 const app = new Hono();
 
+// Health endpoint for Railway health checks
+app.get("/health", (c) => {
+  return c.json({ status: "ok", timestamp: Date.now() });
+});
+
 // GraphQL API — auto-generated from schema
 app.use("/graphql", graphql({ db, schema }));
 
