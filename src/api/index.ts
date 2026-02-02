@@ -10,10 +10,8 @@ import { desc, eq, sql } from "ponder";
 
 const app = new Hono();
 
-// Health check
-app.get("/health", (c) => c.json({ status: "ok" }));
-
 // Stats endpoint — summary of indexed data
+// Note: /health is reserved by Ponder (built-in healthcheck)
 app.get("/stats", async (c) => {
   const [accounts] = await db
     .select({ count: sql<number>`count(*)` })
