@@ -243,13 +243,34 @@ belt-indexer/
 
 ### Start Block
 
-The `START_BLOCK` in `ponder.config.ts` is set to `17_000_000`. This is a conservative value before Belt's first deployment on PulseChain. You can adjust it to a later block to speed up initial sync if you know the exact deployment block.
+The `START_BLOCK` in `ponder.config.ts` is set to `25_627_000` (~1 week before 2026-02-02). Adjust when deploying fresh or adding a new chain.
+
+### Database Schema
+
+**Production** uses `DATABASE_SCHEMA=ponder` (stable name). Ponder does crash recovery across deploys — picks up where it left off instead of re-syncing.
+
+**Staging / Preview environments** — use `DATABASE_SCHEMA=$RAILWAY_DEPLOYMENT_ID` for full isolation per deploy. Each deployment gets a clean schema, zero migration conflicts. Tradeoff: re-syncs from start block every deploy (no crash recovery). Good for testing schema changes without breaking production.
+
+```bash
+# Production (current)
+DATABASE_SCHEMA=ponder
+
+# Staging/preview (per-deploy isolation)
+DATABASE_SCHEMA=${{RAILWAY_DEPLOYMENT_ID}}
+```
 
 ### Adding New Addresses
 
 To track additional factories, executors, or implementations:
 1. Add addresses to `src/constants.ts` 
 2. If adding a new EntryPoint, also add it to `ponder.config.ts`
+
+### Adding New Chains
+
+1. Add chain config to `ponder.config.ts` (transport, contracts, start block)
+2. Add chain ID mapping to `CHAIN_IDS` in `src/constants.ts`
+3. Add chain display metadata to `CHAIN_META` in `src/discord.ts`
+4. Redis watermarks are automatically scoped per chain+contract
 
 ## License
 
