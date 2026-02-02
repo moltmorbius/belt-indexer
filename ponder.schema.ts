@@ -5,9 +5,9 @@ import { index, onchainEnum, onchainTable } from "ponder";
 // ---------------------------------------------------------------------------
 
 export const entryPointVersion = onchainEnum("entry_point_version", [
-  "v0.7",
-  "v0.8",
-  "v0.9",
+  "v0_7",
+  "v0_8",
+  "v0_9",
 ]);
 
 // ---------------------------------------------------------------------------

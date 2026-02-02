@@ -3,13 +3,13 @@
 // ---------------------------------------------------------------------------
 
 /** EntryPoint version identifier */
-export type EntryPointVersion = "v0.7" | "v0.8" | "v0.9";
+export type EntryPointVersion = "v0_7" | "v0_8" | "v0_9";
 
 /** Map of Ponder contract name → EntryPoint version */
 export const ENTRY_POINT_VERSIONS: Record<string, EntryPointVersion> = {
-  EntryPointV07: "v0.7",
-  EntryPointV08: "v0.8",
-  EntryPointV09: "v0.9",
+  EntryPointV07: "v0_7",
+  EntryPointV08: "v0_8",
+  EntryPointV09: "v0_9",
 };
 
 /** Map of Ponder chain name → chain ID */
@@ -19,9 +19,9 @@ export const CHAIN_IDS: Record<string, number> = {
 
 /** EntryPoint contract addresses (for reference) */
 export const ENTRY_POINTS = {
-  "v0.7": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "v0.8": "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108",
-  "v0.9": "0x433709009B8330FDa32311DF1C2AFA402eD8D009",
+  "v0_7": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+  "v0_8": "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108",
+  "v0_9": "0x433709009B8330FDa32311DF1C2AFA402eD8D009",
 } as const;
 
 /** Belt SimpleAccountFactory addresses (lowercase for comparison) */
