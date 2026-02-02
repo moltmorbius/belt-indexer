@@ -1,4 +1,4 @@
-import { index, onchainEnum, onchainTable } from "ponder";
+import { index, onchainEnum, onchainTable, offchainTable } from "ponder";
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -145,3 +145,20 @@ export const accountActivity = onchainTable(
     timestampIdx: index().on(table.timestamp),
   }),
 );
+
+// ---------------------------------------------------------------------------
+// Offchain Tables (survive reindexes)
+// ---------------------------------------------------------------------------
+
+/**
+ * Tracks which events have already been posted to Discord.
+ * Offchain table — NOT wiped on reindex. Prevents duplicate notifications.
+ */
+export const notificationLog = offchainTable("notification_log", (t) => ({
+  /** Event ID (userOpHash or deploy ID) */
+  id: t.text().primaryKey(),
+  /** Type of event: "user_op" or "account_deployed" */
+  eventType: t.text().notNull(),
+  /** When the notification was sent (unix ms) */
+  notifiedAt: t.bigint().notNull(),
+}));
