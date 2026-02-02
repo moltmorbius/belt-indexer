@@ -23,6 +23,8 @@ export const userOperation = onchainTable(
   (t) => ({
     /** userOpHash — primary key */
     id: t.text().primaryKey(),
+    /** Chain ID where this operation occurred */
+    chainId: t.integer().notNull(),
     /** Account (sender) address */
     sender: t.hex().notNull(),
     /** Paymaster address (or zero address) */
@@ -47,6 +49,7 @@ export const userOperation = onchainTable(
     timestamp: t.bigint().notNull(),
   }),
   (table) => ({
+    chainIdx: index().on(table.chainId),
     senderIdx: index().on(table.sender),
     paymasterIdx: index().on(table.paymaster),
     blockIdx: index().on(table.blockNumber),
@@ -62,6 +65,8 @@ export const accountDeployed = onchainTable(
   (t) => ({
     /** Composite key: userOpHash (unique per deployment) */
     id: t.text().primaryKey(),
+    /** Chain ID where this account was deployed */
+    chainId: t.integer().notNull(),
     /** The deployed smart account address */
     account: t.hex().notNull(),
     /** Factory address that deployed the account */
@@ -80,6 +85,7 @@ export const accountDeployed = onchainTable(
     timestamp: t.bigint().notNull(),
   }),
   (table) => ({
+    chainIdx: index().on(table.chainId),
     accountIdx: index().on(table.account),
     factoryIdx: index().on(table.factory),
     blockIdx: index().on(table.blockNumber),
@@ -95,6 +101,8 @@ export const smartAccount = onchainTable(
   (t) => ({
     /** Account address — primary key */
     address: t.hex().primaryKey(),
+    /** Chain ID where this account lives */
+    chainId: t.integer().notNull(),
     /** Factory that created it */
     factory: t.hex().notNull(),
     /** EntryPoint version (from factory version) */
@@ -109,6 +117,7 @@ export const smartAccount = onchainTable(
     totalGasSpent: t.bigint().notNull().default(0n),
   }),
   (table) => ({
+    chainIdx: index().on(table.chainId),
     factoryIdx: index().on(table.factory),
   }),
 );
@@ -122,6 +131,8 @@ export const accountActivity = onchainTable(
   (t) => ({
     /** Unique ID: txHash-logIndex */
     id: t.text().primaryKey(),
+    /** Chain ID where this activity occurred */
+    chainId: t.integer().notNull(),
     /** The smart account address */
     account: t.hex().notNull(),
     /** userOpHash */
@@ -140,6 +151,7 @@ export const accountActivity = onchainTable(
     timestamp: t.bigint().notNull(),
   }),
   (table) => ({
+    chainIdx: index().on(table.chainId),
     accountIdx: index().on(table.account),
     blockIdx: index().on(table.blockNumber),
     timestampIdx: index().on(table.timestamp),

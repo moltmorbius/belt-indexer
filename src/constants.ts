@@ -12,6 +12,11 @@ export const ENTRY_POINT_VERSIONS: Record<string, EntryPointVersion> = {
   EntryPointV09: "v0.9",
 };
 
+/** Map of Ponder chain name → chain ID */
+export const CHAIN_IDS: Record<string, number> = {
+  pulsechain: 369,
+};
+
 /** EntryPoint contract addresses (for reference) */
 export const ENTRY_POINTS = {
   "v0.7": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",

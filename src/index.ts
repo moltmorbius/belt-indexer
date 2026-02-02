@@ -74,6 +74,8 @@ function registerUserOpHandler(
       event.args;
 
     const paymasterAddr = paymaster ?? ZERO_ADDRESS;
+    // PulseChain — will be dynamic when multi-chain is added
+    const chainId = 369;
 
     // Filter: only index Belt-related UserOps
     const related = await isBeltRelated(sender, paymasterAddr, context.db);
@@ -86,6 +88,7 @@ function registerUserOpHandler(
       .insert(userOperation)
       .values({
         id,
+        chainId,
         sender,
         paymaster: paymasterAddr,
         nonce,
@@ -106,6 +109,7 @@ function registerUserOpHandler(
       .insert(accountActivity)
       .values({
         id: activityId,
+        chainId,
         account: sender,
         userOpHash: id,
         success,
@@ -132,6 +136,7 @@ function registerUserOpHandler(
           });
         walletState = {
           address: sender,
+          chainId,
           factory: existing.factory,
           entryPointVersion: existing.entryPointVersion,
           deployedAt: existing.deployedAt,
@@ -148,6 +153,7 @@ function registerUserOpHandler(
     if (isNew) {
       const opInfo: UserOpInfo = {
         userOpHash: id,
+        chainId,
         sender,
         paymaster: paymasterAddr,
         success,
@@ -177,6 +183,8 @@ function registerAccountDeployedHandler(
 
     const factoryAddr = factory ?? ZERO_ADDRESS;
     const paymasterAddr = paymaster ?? ZERO_ADDRESS;
+    // PulseChain — will be dynamic when multi-chain is added
+    const chainId = 369;
 
     // Filter: only index accounts deployed by Belt factories
     if (!isBeltFactory(factoryAddr)) return;
@@ -188,6 +196,7 @@ function registerAccountDeployedHandler(
       .insert(accountDeployed)
       .values({
         id,
+        chainId,
         account: sender,
         factory: factoryAddr,
         paymaster: paymasterAddr,
@@ -204,6 +213,7 @@ function registerAccountDeployedHandler(
       .insert(smartAccount)
       .values({
         address: sender,
+        chainId,
         factory: factoryAddr,
         entryPointVersion: version,
         deployedAtBlock: BigInt(event.block.number),
@@ -218,6 +228,7 @@ function registerAccountDeployedHandler(
     if (isNew) {
       const depInfo: DeployInfo = {
         userOpHash: id,
+        chainId,
         account: sender,
         factory: factoryAddr,
         paymaster: paymasterAddr,

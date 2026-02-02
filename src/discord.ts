@@ -20,11 +20,11 @@ function shortenAddr(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-function formatPLS(wei: bigint): string {
+function formatGas(wei: bigint, currency: string = "PLS"): string {
   const eth = Number(wei) / 1e18;
-  if (eth < 0.001) return `${(eth * 1e6).toFixed(2)} μPLS`;
-  if (eth < 1) return `${eth.toFixed(6)} PLS`;
-  return `${eth.toFixed(4)} PLS`;
+  if (eth < 0.001) return `${(eth * 1e6).toFixed(2)} μ${currency}`;
+  if (eth < 1) return `${eth.toFixed(6)} ${currency}`;
+  return `${eth.toFixed(4)} ${currency}`;
 }
 
 function formatTimestamp(ts: bigint): string {
@@ -43,8 +43,19 @@ function timeSince(deployTs: bigint, nowTs: bigint): string {
 // Embed builders
 // ---------------------------------------------------------------------------
 
+/** Chain metadata for display */
+const CHAIN_META: Record<number, { name: string; explorer: string; currency: string }> = {
+  369: { name: "PulseChain", explorer: "https://scan.pulsechain.com", currency: "PLS" },
+  1: { name: "Ethereum", explorer: "https://etherscan.io", currency: "ETH" },
+};
+
+function getChainMeta(chainId: number) {
+  return CHAIN_META[chainId] ?? { name: `Chain ${chainId}`, explorer: EXPLORER, currency: "ETH" };
+}
+
 export interface WalletState {
   address: string;
+  chainId: number;
   factory: string;
   entryPointVersion: string;
   deployedAt: bigint;
@@ -54,6 +65,7 @@ export interface WalletState {
 
 export interface UserOpInfo {
   userOpHash: string;
+  chainId: number;
   sender: string;
   paymaster: string;
   success: boolean;
@@ -67,6 +79,7 @@ export interface UserOpInfo {
 
 export interface DeployInfo {
   userOpHash: string;
+  chainId: number;
   account: string;
   factory: string;
   paymaster: string;
@@ -78,10 +91,16 @@ export interface DeployInfo {
 
 function buildUserOpEmbed(op: UserOpInfo, wallet: WalletState | null) {
   const statusEmoji = op.success ? "✅" : "❌";
+  const chain = getChainMeta(op.chainId);
   const fields = [
     {
+      name: "Chain",
+      value: `${chain.name} (${op.chainId})`,
+      inline: true,
+    },
+    {
       name: "Sender",
-      value: `[\`${shortenAddr(op.sender)}\`](${EXPLORER}/address/${op.sender})`,
+      value: `[\`${shortenAddr(op.sender)}\`](${chain.explorer}/address/${op.sender})`,
       inline: true,
     },
     {
@@ -89,17 +108,17 @@ function buildUserOpEmbed(op: UserOpInfo, wallet: WalletState | null) {
       value:
         op.paymaster === "0x0000000000000000000000000000000000000000"
           ? "Self-sponsored"
-          : `[\`${shortenAddr(op.paymaster)}\`](${EXPLORER}/address/${op.paymaster})`,
+          : `[\`${shortenAddr(op.paymaster)}\`](${chain.explorer}/address/${op.paymaster})`,
       inline: true,
     },
     {
       name: "Gas Cost",
-      value: formatPLS(op.actualGasCost),
+      value: formatGas(op.actualGasCost, chain.currency),
       inline: true,
     },
     {
       name: "Tx",
-      value: `[\`${shortenAddr(op.txHash)}\`](${EXPLORER}/tx/${op.txHash})`,
+      value: `[\`${shortenAddr(op.txHash)}\`](${chain.explorer}/tx/${op.txHash})`,
       inline: true,
     },
     {
@@ -121,7 +140,7 @@ function buildUserOpEmbed(op: UserOpInfo, wallet: WalletState | null) {
       name: "📊 Wallet Summary",
       value: [
         `**Total Ops:** ${wallet.totalUserOps}`,
-        `**Total Gas:** ${formatPLS(wallet.totalGasSpent)}`,
+        `**Total Gas:** ${formatGas(wallet.totalGasSpent, chain.currency)}`,
         `**Account Age:** ${age}`,
         `**Factory:** ${wallet.entryPointVersion}`,
       ].join(" • "),
@@ -130,28 +149,34 @@ function buildUserOpEmbed(op: UserOpInfo, wallet: WalletState | null) {
   }
 
   return {
-    title: `${statusEmoji} UserOperation — ${op.entryPointVersion}`,
+    title: `${statusEmoji} UserOperation — ${chain.name} ${op.entryPointVersion}`,
     color: op.success ? 0x00cc66 : 0xff3333,
     fields,
     timestamp: formatTimestamp(op.timestamp),
-    footer: { text: `UserOp ${shortenAddr(op.userOpHash)}` },
+    footer: { text: `UserOp ${shortenAddr(op.userOpHash)} | ${chain.name}` },
   };
 }
 
 function buildDeployEmbed(dep: DeployInfo) {
+  const chain = getChainMeta(dep.chainId);
   return {
-    title: `🚀 New Account Deployed — ${dep.entryPointVersion}`,
+    title: `🚀 New Account Deployed — ${chain.name} ${dep.entryPointVersion}`,
     color: 0x5865f2,
-    description: `A new Belt smart account has been created on PulseChain.`,
+    description: `A new Belt smart account has been created on ${chain.name}.`,
     fields: [
       {
+        name: "Chain",
+        value: `${chain.name} (${dep.chainId})`,
+        inline: true,
+      },
+      {
         name: "Account",
-        value: `[\`${dep.account}\`](${EXPLORER}/address/${dep.account})`,
+        value: `[\`${dep.account}\`](${chain.explorer}/address/${dep.account})`,
         inline: false,
       },
       {
         name: "Factory",
-        value: `[\`${shortenAddr(dep.factory)}\`](${EXPLORER}/address/${dep.factory})`,
+        value: `[\`${shortenAddr(dep.factory)}\`](${chain.explorer}/address/${dep.factory})`,
         inline: true,
       },
       {
@@ -159,7 +184,7 @@ function buildDeployEmbed(dep: DeployInfo) {
         value:
           dep.paymaster === "0x0000000000000000000000000000000000000000"
             ? "Self-sponsored"
-            : `[\`${shortenAddr(dep.paymaster)}\`](${EXPLORER}/address/${dep.paymaster})`,
+            : `[\`${shortenAddr(dep.paymaster)}\`](${chain.explorer}/address/${dep.paymaster})`,
         inline: true,
       },
       {
@@ -169,7 +194,7 @@ function buildDeployEmbed(dep: DeployInfo) {
       },
       {
         name: "Tx",
-        value: `[\`${shortenAddr(dep.txHash)}\`](${EXPLORER}/tx/${dep.txHash})`,
+        value: `[\`${shortenAddr(dep.txHash)}\`](${chain.explorer}/tx/${dep.txHash})`,
         inline: true,
       },
       {
@@ -179,7 +204,7 @@ function buildDeployEmbed(dep: DeployInfo) {
       },
     ],
     timestamp: formatTimestamp(dep.timestamp),
-    footer: { text: `Deploy ${shortenAddr(dep.userOpHash)}` },
+    footer: { text: `Deploy ${shortenAddr(dep.userOpHash)} | ${chain.name}` },
   };
 }
 
