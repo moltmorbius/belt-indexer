@@ -1,5 +1,5 @@
 import { db } from "ponder:api";
-import schema from "ponder:schema";
+import * as schema from "ponder:schema";
 import { graphql, client } from "ponder";
 import { Hono } from "hono";
 
