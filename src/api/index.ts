@@ -15,6 +15,8 @@ const app = new Hono();
 // SQL over HTTP — @ponder/client connects here for type-safe queries
 app.use("/sql/*", client({ db, schema }));
 
+// CORS headers are handled by Ponder's server (Access-Control-Allow-Origin: *)
+
 // Stats endpoint — summary of indexed data
 // Note: /health is reserved by Ponder (built-in healthcheck)
 app.get("/stats", async (c) => {
