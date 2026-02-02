@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "ponder start",
+    "start": "ponder start --schema ${RAILWAY_DEPLOYMENT_ID:-belt_indexer} --views-schema belt",
     "serve": "ponder serve",
     "codegen": "ponder codegen",
     "notify": "node scripts/notify-discord.mjs"
