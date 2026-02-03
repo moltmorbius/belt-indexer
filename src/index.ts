@@ -212,6 +212,18 @@ function registerAccountDeployedHandler(
       })
       .onConflictDoNothing();
 
+    // Read owner address from the deployed account
+    let ownerAddress: `0x${string}` | null = null;
+    try {
+      ownerAddress = await context.client.readContract({
+        address: sender,
+        abi: [{ type: "function", name: "owner", inputs: [], outputs: [{ type: "address" }], stateMutability: "view" }],
+        functionName: "owner",
+      }) as `0x${string}`;
+    } catch {
+      // If reading owner fails (e.g., non-standard account), leave it null
+    }
+
     // Track the smart account for future UserOp filtering
     await context.db
       .insert(smartAccount)
@@ -219,6 +231,7 @@ function registerAccountDeployedHandler(
         address: sender,
         chainId,
         factory: factoryAddr,
+        ownerAddress,
         entryPointVersion: version,
         deployedAtBlock: BigInt(event.block.number),
         deployedAt: BigInt(event.block.timestamp),

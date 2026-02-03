@@ -109,6 +109,8 @@ export const smartAccount = onchainTable(
     chainId: t.integer().notNull(),
     /** Factory that created it */
     factory: t.hex().notNull(),
+    /** EOA owner address (extracted from initCode) */
+    ownerAddress: t.hex(),
     /** EntryPoint version (from factory version) */
     entryPointVersion: entryPointVersion("entry_point_version").notNull(),
     /** Block when deployed */
