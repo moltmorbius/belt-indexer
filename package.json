@@ -7,12 +7,10 @@
     "dev": "ponder dev",
     "start": "ponder start --schema ${RAILWAY_DEPLOYMENT_ID:-belt_indexer} --views-schema belt",
     "serve": "ponder serve",
-    "codegen": "ponder codegen",
-    "notify": "node scripts/notify-discord.mjs"
+    "codegen": "ponder codegen"
   },
   "dependencies": {
     "hono": "^4.11.7",
-    "ioredis": "^5.9.2",
     "ponder": "0.16.3",
     "viem": "^2.21.0"
   },

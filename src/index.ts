@@ -14,9 +14,6 @@ import {
   isBeltFactory,
   ZERO_ADDRESS,
 } from "./constants";
-import { notifyUserOp, notifyAccountDeployed } from "./discord";
-import type { WalletState, UserOpInfo, DeployInfo } from "./discord";
-import { shouldNotify } from "./redis";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -124,7 +121,6 @@ function registerUserOpHandler(
       .onConflictDoNothing();
 
     // Update smart account stats if it's a known account
-    let walletState: WalletState | null = null;
     try {
       const existing = await context.db.find(smartAccount, { address: sender });
       if (existing) {
@@ -136,39 +132,9 @@ function registerUserOpHandler(
             totalUserOps: newTotalOps,
             totalGasSpent: newTotalGas,
           });
-        walletState = {
-          address: sender,
-          chainId,
-          factory: existing.factory,
-          entryPointVersion: existing.entryPointVersion,
-          deployedAt: existing.deployedAt,
-          totalUserOps: newTotalOps,
-          totalGasSpent: newTotalGas,
-        };
       }
     } catch {
       // Account not tracked yet — will be tracked once AccountDeployed is seen
-    }
-
-    // --- Discord notification (Redis dedup, per chain+contract) ---
-    const isNew = await shouldNotify(id, BigInt(event.block.number), chainId, contractName);
-    if (isNew) {
-      const opInfo: UserOpInfo = {
-        userOpHash: id,
-        chainId,
-        sender,
-        paymaster: paymasterAddr,
-        success,
-        actualGasCost,
-        actualGasUsed,
-        entryPointVersion: version,
-        txHash: event.transaction.hash,
-        blockHash: event.block.hash,
-        blockNumber: BigInt(event.block.number),
-        timestamp: BigInt(event.block.timestamp),
-      };
-      // Fire-and-forget — don't block indexing on webhook delivery
-      notifyUserOp(opInfo, walletState).catch(() => {});
     }
   });
 }
@@ -239,25 +205,6 @@ function registerAccountDeployedHandler(
         totalGasSpent: 0n,
       })
       .onConflictDoNothing();
-
-    // --- Discord notification (Redis dedup, per chain+contract) ---
-    const isNew = await shouldNotify(id, BigInt(event.block.number), chainId, contractName);
-    if (isNew) {
-      const depInfo: DeployInfo = {
-        userOpHash: id,
-        chainId,
-        account: sender,
-        factory: factoryAddr,
-        paymaster: paymasterAddr,
-        entryPointVersion: version,
-        txHash: event.transaction.hash,
-        blockHash: event.block.hash,
-        blockNumber: BigInt(event.block.number),
-        timestamp: BigInt(event.block.timestamp),
-      };
-      // Fire-and-forget
-      notifyAccountDeployed(depInfo).catch(() => {});
-    }
   });
 }
 
