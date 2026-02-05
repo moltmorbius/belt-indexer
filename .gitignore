@@ -22,3 +22,14 @@ out/
 
 # Notification state
 scripts/.last-check
+
+# OpenClaw workspace files (should not be committed to project repos)
+AGENTS.md
+BOOTSTRAP.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+MEMORY.md
+memory/
