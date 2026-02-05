@@ -209,10 +209,52 @@ function registerAccountDeployedHandler(
 }
 
 // ---------------------------------------------------------------------------
+// Factory AccountCreated handlers — direct from Belt factories
+// ---------------------------------------------------------------------------
+
+function registerFactoryHandler(
+  contractName: string,
+  factoryAddress: `0x${string}`,
+  version: EntryPointVersion,
+) {
+  ponder.on(`${contractName}:AccountCreated`, async ({ event, context }) => {
+    const { account, owner } = event.args;
+    const chainId = 369;
+
+    // Track the smart account immediately
+    await context.db
+      .insert(smartAccount)
+      .values({
+        address: account,
+        chainId,
+        factory: factoryAddress,
+        ownerAddress: owner,
+        entryPointVersion: version,
+        deployedAtBlock: BigInt(event.block.number),
+        deployedAt: BigInt(event.block.timestamp),
+        totalUserOps: 0,
+        totalGasSpent: 0n,
+      })
+      .onConflictDoNothing();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Register all handlers
 // ---------------------------------------------------------------------------
 
 for (const [contractName, version] of Object.entries(ENTRY_POINT_VERSIONS)) {
   registerUserOpHandler(contractName, version);
   registerAccountDeployedHandler(contractName, version);
+}
+
+// Register factory handlers
+const FACTORY_CONTRACTS: Record<string, { address: `0x${string}`; version: EntryPointVersion }> = {
+  BeltFactoryV07: { address: "0xC03f10876B6f9B2c6927EA8b2ac9552c6bb2Ce68", version: "v0_7" },
+  BeltFactoryV08: { address: "0x13E9ed32155810FDbd067D4522C492D6f68E5944", version: "v0_8" },
+  BeltFactoryV09: { address: "0xAD07bbb7bEA77E323C838481F668d22864e9F66E", version: "v0_9" },
+};
+
+for (const [contractName, config] of Object.entries(FACTORY_CONTRACTS)) {
+  registerFactoryHandler(contractName, config.address, config.version);
 }

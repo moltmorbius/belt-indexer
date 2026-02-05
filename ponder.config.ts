@@ -1,6 +1,7 @@
 import { createConfig } from "ponder";
 import { http } from "viem";
 import { EntryPointAbi } from "./abis/EntryPointAbi";
+import { SimpleAccountFactoryAbi } from "./abis/SimpleAccountFactoryAbi";
 
 /**
  * Belt AA Indexer — PulseChain Configuration
@@ -58,6 +59,27 @@ export default createConfig({
       abi: EntryPointAbi,
       chain: "pulsechain",
       address: "0x433709009B8330FDa32311DF1C2AFA402eD8D009",
+      startBlock: START_BLOCK,
+    },
+    // --- Belt SimpleAccountFactory v0.7 ---
+    BeltFactoryV07: {
+      abi: SimpleAccountFactoryAbi,
+      chain: "pulsechain",
+      address: "0xC03f10876B6f9B2c6927EA8b2ac9552c6bb2Ce68",
+      startBlock: START_BLOCK,
+    },
+    // --- Belt SimpleAccountFactory v0.8 ---
+    BeltFactoryV08: {
+      abi: SimpleAccountFactoryAbi,
+      chain: "pulsechain",
+      address: "0x13E9ed32155810FDbd067D4522C492D6f68E5944",
+      startBlock: START_BLOCK,
+    },
+    // --- Belt SimpleAccountFactory v0.9 ---
+    BeltFactoryV09: {
+      abi: SimpleAccountFactoryAbi,
+      chain: "pulsechain",
+      address: "0xAD07bbb7bEA77E323C838481F668d22864e9F66E",
       startBlock: START_BLOCK,
     },
   },
